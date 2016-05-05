@@ -8,7 +8,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/lox/golang-melb-hackday/unsplash"
+	"github.com/lox/unsplash-go"
 )
 
 func main() {
