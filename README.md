@@ -4,7 +4,10 @@ Unsplash API for Golang
 
 Live coded at a Golang Melb Hack night.
 
-Only `GET /users/:username/photos` is implemented.
+## Implemented
+
+ - [*] Authentication via OAuth
+ - [*] `GET /users/:username/photos`
 
 ## Example
 
