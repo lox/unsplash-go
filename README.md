@@ -6,8 +6,8 @@ Live coded at a Golang Melb Hack night.
 
 ## Implemented
 
- - [*] Authentication via OAuth
- - [*] `GET /users/:username/photos`
+ - Authentication via OAuth
+ - `GET /users/:username/photos`
 
 ## Example
 
