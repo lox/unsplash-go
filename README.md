@@ -21,3 +21,10 @@ for _, photo := range photos {
 	log.Println(photo.Links.Download)
 }
 ```
+
+## Using the CLI
+
+```bash
+go get github.com/lox/unsplash-go/cli/unsplash
+unsplash -user nasa -download ~/Documents/Wallpaper/Unsplash/NASA
+```

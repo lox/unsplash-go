@@ -6,51 +6,82 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"runtime"
 	"sync"
 
 	"github.com/lox/unsplash-go"
 )
 
-func main() {
-	var (
-		clientId = flag.String("clientid", "", "The client id for the unsplash application")
-		user     = flag.String("user", "", "The user to download photos from")
-	)
+var (
+	user     = flag.String("user", "", "The user to download photos from")
+	download = flag.String("download", "", "The directory to download photos to")
+)
 
+func main() {
 	flag.Parse()
 
-	c := unsplash.NewClient(*clientId)
-	photos, err := c.GetUserPhotos(*user)
+	oAuthClient, err := newOAuthClient()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	client := unsplash.NewClient(oAuthClient)
+
 	var wg sync.WaitGroup
 
-	for _, photo := range photos {
-		log.Printf("Downloading %s (file=%s.jpg)", photo.Links.Download, photo.ID)
-
-		f, err := os.Create(photo.ID + ".jpg")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer f.Close()
-
+	err = client.GetUserPhotos(*user, func(photo unsplash.Photo) error {
 		wg.Add(1)
-		go func(photo unsplash.Photo) {
-			resp, err := http.Get(photo.Links.Download)
-			if err != nil {
+		go func() {
+			log.Printf("Downloading %s (file=%s.jpg)", photo.Links.Download, photo.ID)
+			if err = downloadPhoto(*download, photo); err != nil {
 				log.Fatal(err)
 			}
-
-			io.Copy(f, resp.Body)
-			defer resp.Body.Close()
-
 			log.Printf("Finished downloading %s.jpg", photo.ID)
 			wg.Done()
-		}(photo)
+		}()
+
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	wg.Wait()
 	log.Printf("All done!")
+}
+
+func downloadPhoto(dir string, photo unsplash.Photo) error {
+	absDir, err := filepath.Abs(*download)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	f, err := os.Create(filepath.Join(absDir, photo.ID+".jpg"))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	resp, err := http.Get(photo.Links.Download)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(f, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return resp.Body.Close()
+}
+
+func cacheDir() string {
+	switch runtime.GOOS {
+	case "darwin":
+		return filepath.Join(os.Getenv("HOME"), "Library", "Caches")
+	case "linux", "freebsd":
+		return filepath.Join(os.Getenv("HOME"), ".cache")
+	}
+	return "."
 }
