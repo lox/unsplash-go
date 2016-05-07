@@ -17,13 +17,26 @@ const (
 	apiVersion = "v1"
 )
 
+// Client is a client for Unsplash.com's API
 type Client struct {
-	client *http.Client
+	client        *http.Client
+	requestFilter func(r *http.Request)
 }
 
+// NewClient creates a new Unsplash Client with an http.Client configured for OAuth
 func NewClient(client *http.Client) *Client {
 	return &Client{
 		client: client,
+	}
+}
+
+// NewPublicClient creates a new Unsplash Client for unauthenticated public actions
+func NewPublicClient(clientID string) *Client {
+	return &Client{
+		client: client,
+		requestFilter: func(r *http.Request) {
+			r.Header.Set("Authorization", "Client-ID "+clientID)
+		},
 	}
 }
 
@@ -37,6 +50,7 @@ func (c *Client) newRequest(method string, path string, body io.Reader) (*http.R
 	return req, err
 }
 
+// GetUserPhotos gets all of a users photos
 func (c *Client) GetUserPhotos(username string, f func(p Photo) error) error {
 	req, err := c.newRequest("GET", fmt.Sprintf("users/%s/photos", username), nil)
 	if err != nil {
@@ -102,6 +116,7 @@ func (c *Client) paginate(req *http.Request, f func(resp *http.Response) error) 
 	return nil
 }
 
+// Photo is an Unsplash Photo
 type Photo struct {
 	ID          string `json:"id"`
 	Width       int    `json:"width"`
@@ -139,23 +154,4 @@ type Photo struct {
 		HTML     string `json:"html"`
 		Download string `json:"download"`
 	} `json:"links"`
-}
-
-type pager struct {
-	lister func(page int) (v interface{}, nextPage int, err error)
-}
-
-func (p *pager) Pages(f func(v interface{}, lastPage bool) bool) error {
-	page := 1
-	for {
-		val, nextPage, err := p.lister(page)
-		if err != nil {
-			return err
-		}
-		if !f(val, nextPage == 0) || nextPage == 0 {
-			break
-		}
-		page = nextPage
-	}
-	return nil
 }

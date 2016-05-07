@@ -11,17 +11,16 @@ Live coded at a Golang Melb Hack night.
 
 ## Example
 
-Create a new [Unsplash Developer Application](https://unsplash.com/developers) and use the client id below.
+Create a new [Unsplash Developer Application](https://unsplash.com/developers) and use the client id below, or for how to use OAuth, see [cli/unsplash/oauth.go](cli/unsplash/oauth.go)
 
 ```go
-c := unsplash.NewClient("client id goes here")
-photos, err := c.GetUserPhotos("lox")
+c := unsplash.NewPublicClient("client id from above goes here")
+photos, err := c.GetUserPhotos("lox", func(p unsplash.Photo) error {
+	log.Println(photo.Links.Download)
+	return nil
+})
 if err != nil {
 	log.Fatal(err)
-}
-
-for _, photo := range photos {
-	log.Println(photo.Links.Download)
 }
 ```
 
