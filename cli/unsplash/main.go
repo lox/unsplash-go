@@ -26,7 +26,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	client := unsplash.NewClient(oAuthClient)
+	client := unsplash.Client{
+		Client: oAuthClient,
+	}
 
 	var wg sync.WaitGroup
 

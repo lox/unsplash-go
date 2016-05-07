@@ -14,7 +14,7 @@ Live coded at a Golang Melb Hack night.
 Create a new [Unsplash Developer Application](https://unsplash.com/developers) and use the client id below, or for how to use OAuth, see [cli/unsplash/oauth.go](cli/unsplash/oauth.go)
 
 ```go
-c := unsplash.NewPublicClient("client id from above goes here")
+c := unsplash.NewClient("client id from above goes here")
 photos, err := c.GetUserPhotos("lox", func(p unsplash.Photo) error {
 	log.Println(photo.Links.Download)
 	return nil

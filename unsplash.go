@@ -19,21 +19,14 @@ const (
 
 // Client is a client for Unsplash.com's API
 type Client struct {
-	client        *http.Client
+	Client        *http.Client
 	requestFilter func(r *http.Request)
 }
 
-// NewClient creates a new Unsplash Client with an http.Client configured for OAuth
-func NewClient(client *http.Client) *Client {
+// NewClient creates a new Unsplash Client for unauthenticated public actions
+func NewClient(clientID string) *Client {
 	return &Client{
-		client: client,
-	}
-}
-
-// NewPublicClient creates a new Unsplash Client for unauthenticated public actions
-func NewPublicClient(clientID string) *Client {
-	return &Client{
-		client: client,
+		Client: &http.Client{},
 		requestFilter: func(r *http.Request) {
 			r.Header.Set("Authorization", "Client-ID "+clientID)
 		},
@@ -87,7 +80,7 @@ func (c *Client) paginate(req *http.Request, f func(resp *http.Response) error) 
 		req.URL.Query().Set("page", strconv.Itoa(page))
 
 		log.Printf("Requesting %s %s", req.Method, req.URL.String())
-		resp, err := c.client.Do(req)
+		resp, err := c.Client.Do(req)
 		if err != nil {
 			return err
 		}
