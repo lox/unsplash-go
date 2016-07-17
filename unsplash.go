@@ -44,36 +44,66 @@ func (c *Client) newRequest(method string, path string, body io.Reader) (*http.R
 }
 
 // GetUserPhotos gets all of a users photos
-func (c *Client) GetUserPhotos(username string, f func(p Photo) error) error {
-	req, err := c.newRequest("GET", fmt.Sprintf("users/%s/photos", username), nil)
+func (c *Client) GetUserPhotos(username string, orderBy string, f func(p Photo) (bool, error)) error {
+	params := map[string]string{
+		"order_by": orderBy,
+	}
+
+	return c.getPhotos(fmt.Sprintf("users/%s/photos", username), params, f)
+}
+
+// GetUsersLikes gets all the photos a user has liked
+func (c *Client) GetUsersLikes(username string, orderBy string, f func(p Photo) (bool, error)) error {
+	params := map[string]string{
+		"order_by": orderBy,
+	}
+
+	return c.getPhotos(fmt.Sprintf("users/%s/likes", username), params, f)
+}
+
+// GetCollection gets all the photos from a collection
+func (c *Client) GetCollection(id string, orderBy string, f func(p Photo) (bool, error)) error {
+	params := map[string]string{
+		"order_by": orderBy,
+	}
+
+	return c.getPhotos(fmt.Sprintf("collections/%s/photos", id), params, f)
+}
+
+func (c *Client) getPhotos(path string, params map[string]string, f func(p Photo) (bool, error)) error {
+	req, err := c.newRequest("GET", path, nil)
 	if err != nil {
 		return err
 	}
 
-	return c.paginate(req, func(resp *http.Response) error {
+	for k, v := range params {
+		req.URL.Query().Set(k, v)
+	}
+
+	return c.paginate(req, func(resp *http.Response) (bool, error) {
 		b, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return err
+			return true, err
 		}
 
 		resp.Body.Close()
 		var photos []Photo
 
 		if err = json.Unmarshal(b, &photos); err != nil {
-			return err
+			return true, err
 		}
 
 		for _, photo := range photos {
-			if err = f(photo); err != nil {
-				return err
+			if done, err := f(photo); done {
+				return done, err
 			}
 		}
 
-		return nil
+		return false, nil
 	})
 }
 
-func (c *Client) paginate(req *http.Request, f func(resp *http.Response) error) error {
+func (c *Client) paginate(req *http.Request, f func(resp *http.Response) (bool, error)) error {
 	page := 1
 
 	for {
@@ -85,8 +115,11 @@ func (c *Client) paginate(req *http.Request, f func(resp *http.Response) error) 
 			return err
 		}
 
-		if err = f(resp); err != nil {
+		log.Printf("Response was %d %s", resp.StatusCode, resp.Status)
+		if done, err := f(resp); err != nil {
 			return err
+		} else if done {
+			return nil
 		}
 
 		hasNext := false

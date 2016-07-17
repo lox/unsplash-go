@@ -86,8 +86,11 @@ func unsplashHandler(tokenCh chan *oauth2.Token) http.Handler {
 }
 
 func isLoggedIn() bool {
-	_, err := os.Stat("token.json")
-	return !os.IsNotExist(err)
+	t, err := loadToken()
+	if err != nil || time.Now().After(t.Expiry) {
+		return false
+	}
+	return true
 }
 
 func loadToken() (*oauth2.Token, error) {
@@ -95,7 +98,6 @@ func loadToken() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	token := &oauth2.Token{}
 	defer tokenFile.Close()
 
@@ -103,7 +105,6 @@ func loadToken() (*oauth2.Token, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return token, err
 }
 
